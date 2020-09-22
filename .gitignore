@@ -2,3 +2,4 @@ data/*
 *.xlsx
 *.nc
 *.csv
+.DS_Store
