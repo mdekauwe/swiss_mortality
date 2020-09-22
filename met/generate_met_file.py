@@ -246,6 +246,8 @@ if __name__ == "__main__":
     df.rh = np.where(df.rh > 100.0, 100.0, df.rh)
     df.rh /= 100.
 
+
+
     # Add co2
     df_co2 = pd.read_csv("AmaFACE_co2npdepforcing_1850_2100_AMB.csv", sep=";")
     df_co2.rename(columns={'CO2 [ppm]':'co2'}, inplace=True)
@@ -259,12 +261,17 @@ if __name__ == "__main__":
     df['lwdown'] = estimate_lwdown(df.tair.values, df.rh.values)
 
     # Add qair
-    df['qair'] =(df.rh.values, df.tair.values,
+    df['qair'] = convert_rh_to_qair(df.rh.values, df.tair.values,
                                     df.psurf.values)
 
     # drop the single 2019 entry
     df.drop(df.tail(1).index, inplace=True)
 
-    df = df.fillna(method='ffill')
+    #df = df.fillna(method='ffill')
+    df['rainf'].fillna(0.0, inplace=True)
+    df['tair'].fillna(16.0+deg_2_kelvin, inplace=True)
+    df['swdown'].fillna(90., inplace=True)
+    df['lwdown'].fillna(320., inplace=True)
+    df = df.fillna(df.mean())
 
     main(lat, lon, df)
