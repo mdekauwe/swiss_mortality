@@ -268,16 +268,23 @@ if __name__ == "__main__":
     df.drop(df.tail(1).index, inplace=True)
 
     #df = df.fillna(method='ffill')
+    df['tair'].interpolate(method ='linear', limit_direction ='forward',
+                          inplace=True)
+    df['lwdown'].interpolate(method ='linear', limit_direction ='forward',
+                            inplace=True)
+    df['qair'].interpolate(method ='linear', limit_direction ='forward',
+                            inplace=True)
+    df['rainf'].fillna(0.0, inplace=True)
+
+
+    df = df.fillna(df.mean()) # wind
 
     ### this will look OK on the daily, but won't have a diurnal cycle,
     ### so need to use a diurnal fill
-    df['rainf'].fillna(0.0, inplace=True)
-    df['tair'].fillna(16.0+deg_2_kelvin, inplace=True)
-    df['swdown'].fillna(90., inplace=True)
-    df['lwdown'].fillna(320., inplace=True)
-
-
-
-    df = df.fillna(df.mean())
+    #df['rainf'].fillna(0.0, inplace=True)
+    #df['tair'].fillna(16.0+deg_2_kelvin, inplace=True)
+    #df['swdown'].fillna(90., inplace=True)
+    #df['lwdown'].fillna(320., inplace=True)
+    #df = df.fillna(df.mean())
 
     main(lat, lon, df)
