@@ -237,7 +237,7 @@ if __name__ == "__main__":
     deg_2_kelvin = 273.15
     df.vpd *= hpa_2_kpa
     df.tair += deg_2_kelvin
-
+    df.rainf /= 3600. # kg m-2 s-1
 
     # sort out negative values
     df.swdown = np.where(df.swdown < 0.0, 0.0, df.swdown)
