@@ -213,8 +213,11 @@ if __name__ == "__main__":
     lat = 47.43805556
     lon = 7.77694444
 
-    fname = "../data/swiss site meto data 2018.xlsx"
-    df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data', na_values="na")
+    fname = "../data/swiss site meto data 2017_18.xlsx"
+    df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data 2018',
+                       na_values="na")
+    #df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data 2017',
+    #                   na_values="na")
 
 
     # Clean up the column names
@@ -267,6 +270,7 @@ if __name__ == "__main__":
     # drop the single 2019 entry
     df.drop(df.tail(1).index, inplace=True)
 
+    """
     #df = df.fillna(method='ffill')
     df['tair'].interpolate(method ='linear', limit_direction ='forward',
                           inplace=True)
@@ -275,9 +279,10 @@ if __name__ == "__main__":
     df['qair'].interpolate(method ='linear', limit_direction ='forward',
                             inplace=True)
     df['rainf'].fillna(0.0, inplace=True)
-
-
     df = df.fillna(df.mean()) # wind
+    """
+
+
 
     ### this will look OK on the daily, but won't have a diurnal cycle,
     ### so need to use a diurnal fill
