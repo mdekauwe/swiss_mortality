@@ -33,6 +33,7 @@ df = df.set_index('dates')
 df.Tair -= 273.15
 df.SWdown *= 2.3
 
+
 df = df.resample("D").agg("mean")
 
 

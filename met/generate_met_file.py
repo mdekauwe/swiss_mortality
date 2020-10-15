@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 def main(lat, lon, df):
 
-    out_fname = "swiss_met.nc"
+    out_fname = "swiss_met_evpd.nc"
 
     ndim = 1
     n_timesteps = len(df)
@@ -131,10 +131,24 @@ def main(lat, lon, df):
     SWdown[:,0,0] = df.swdown.values.reshape(n_timesteps, ndim, ndim)
     Tair[:,0,0,0] = df.tair.values.reshape(n_timesteps, ndim, ndim, ndim)
     Rainf[:,0,0] = df.rainf.values.reshape(n_timesteps, ndim, ndim)
+
+
+    vpd = qair_to_vpd(df.qair.values, df.tair.values, df.psurf.values)
+    vpd = vpd * 1.5
+    qair_back = vpd_to_qair(vpd, df.tair.values, df.psurf.values)
+
+    #plt.plot(df.Qair.values[:1000], "ko")
+    #plt.plot(qair_back[:1000], "g.")
+    #plt.show()
+    #sys.exit()
+    Qair[:,0,0,0] = qair_back.reshape(n_timesteps, ndim, ndim, ndim)
+
     Qair[:,0,0,0] = df.qair.values.reshape(n_timesteps, ndim, ndim, ndim)
     Wind[:,0,0,0] = df.wind.values.reshape(n_timesteps, ndim, ndim, ndim)
     PSurf[:,0,0] = df.psurf.values.reshape(n_timesteps, ndim, ndim)
     LWdown[:,0,0] = df.lwdown.values.reshape(n_timesteps, ndim, ndim)
+
+    #df.co2 *= 2.0
     CO2air[:,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
 
     f.close()
@@ -208,10 +222,139 @@ def estimate_lwdown(tair, rh):
 
     return lw_down
 
+def qair_to_vpd(qair, tair, press):
+
+    """
+    Qair : float
+        specific humidity [kg kg-1]
+    tair : float
+        air temperature [deg C]
+    press : float
+        air pressure [Pa]
+    """
+
+    PA_TO_KPA = 0.001
+    HPA_TO_PA = 100.0
+
+    tc = tair - 273.15
+
+    # saturation vapor pressure (Pa)
+    es = HPA_TO_PA * 6.112 * np.exp((17.67 * tc) / (243.5 + tc))
+
+    # vapor pressure
+    ea = (qair * press) / (0.622 + (1.0 - 0.622) * qair)
+
+    vpd = (es - ea) * PA_TO_KPA
+
+    #vpd = np.where(vpd < 0.05, 0.05, vpd)
+
+    return vpd
+
+def vpd_to_qair(vpd, tair, press):
+
+    PA_TO_KPA = 0.001
+    HPA_TO_PA = 100.0
+
+    tc = tair - 273.15
+    # saturation vapor pressure (Pa)
+    es = HPA_TO_PA * 6.112 * np.exp((17.67 * tc) / (243.5 + tc))
+
+    # vapor pressure
+    ea = es - (vpd/PA_TO_KPA)
+
+    qair = 0.622 * ea / (press - (1 - 0.622) * ea)
+
+    return qair
+
+def convert_rh_to_qair(rh, tair, press):
+    """
+    Converts relative humidity to specific humidity (kg/kg)
+
+    Params:
+    -------
+    tair : float
+        deg C
+    press : float
+        pa
+    rh : float
+        %
+    """
+
+    # Sat vapour pressure in Pa
+    esat = calc_esat(tair)
+
+    # Specific humidity at saturation:
+    ws = 0.622 * esat / (press - esat)
+
+    # specific humidity
+    qair = (rh / 100.0) * ws
+
+    return qair
+
+def calc_esat(tair):
+    """
+    Calculates saturation vapour pressure
+
+    Params:
+    -------
+    tair : float
+        deg C
+
+    Reference:
+    ----------
+    * Jones (1992) Plants and microclimate: A quantitative approach to
+    environmental plant physiology, p110
+    """
+
+    esat = 613.75 * np.exp(17.502 * tair / (240.97 + tair))
+
+    return esat
+
+
 if __name__ == "__main__":
 
     lat = 47.43805556
     lon = 7.77694444
+
+
+
+
+    fname = "../data/MeteoSwiss station Ruenenberg 2016_20.xlsx"
+    df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data Ruenenberg')
+
+    df = df.rename(columns={'time':'dates',
+                            'air temp (°C)':'tair',
+                            'air humidity (%)':'rh',
+                            'global radiation (W/m2)':'swdown',
+                            'wind speed (m/s)':'wind',
+                            'precip (mm)':'rainf',
+                            'vapor presure (hPa)':'vpd'})
+
+    df = df.drop(['stn', 'sunshine duration (min)'], axis=1)
+
+    # Clean up the dates
+    df['dates'] = df['dates'].astype(str)
+    new_dates = []
+    for i in range(len(df)):
+        year = df['dates'][i][0:4]
+        month = df['dates'][i][4:6]
+        day = df['dates'][i][6:8]
+        hour = df['dates'][i][8:10]
+        if day.startswith("0"):
+            day = day[1:]
+        if hour.startswith("0"):
+            hour = hour[1:]
+        date = "%s/%s/%s %s:00" % (year, month, day, hour)
+        new_dates.append(date)
+
+    df['dates'] = new_dates
+    df = df.set_index('dates')
+    df.index = pd.to_datetime(df.index)
+
+    df = df[df.index.year == 2018]
+
+    """
+
 
     fname = "../data/swiss site meto data 2017_18.xlsx"
     df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data 2018',
@@ -233,6 +376,8 @@ if __name__ == "__main__":
     df['dates'] = df['dates'].astype(str).str[:-4]
     date = pd.to_datetime(df['dates'], format='%Y-%m-%d %H:%M:%S')
     df = df.set_index('dates')
+
+    """
 
     # fix units
     hpa_2_kpa = 0.1
