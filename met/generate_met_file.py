@@ -18,9 +18,7 @@ import netCDF4 as nc
 import datetime
 import matplotlib.pyplot as plt
 
-def main(lat, lon, df):
-
-    out_fname = "swiss_met_evpd.nc"
+def main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="amb"):
 
     ndim = 1
     n_timesteps = len(df)
@@ -132,23 +130,19 @@ def main(lat, lon, df):
     Tair[:,0,0,0] = df.tair.values.reshape(n_timesteps, ndim, ndim, ndim)
     Rainf[:,0,0] = df.rainf.values.reshape(n_timesteps, ndim, ndim)
 
-
-    vpd = qair_to_vpd(df.qair.values, df.tair.values, df.psurf.values)
-    vpd = vpd * 1.5
-    qair_back = vpd_to_qair(vpd, df.tair.values, df.psurf.values)
-
-    #plt.plot(df.Qair.values[:1000], "ko")
-    #plt.plot(qair_back[:1000], "g.")
-    #plt.show()
-    #sys.exit()
-    Qair[:,0,0,0] = qair_back.reshape(n_timesteps, ndim, ndim, ndim)
-
-    Qair[:,0,0,0] = df.qair.values.reshape(n_timesteps, ndim, ndim, ndim)
+    if vpd_exp == "ele":
+        vpd = qair_to_vpd(df.qair.values, df.tair.values, df.psurf.values)
+        vpd = vpd * 1.5
+        qair_back = vpd_to_qair(vpd, df.tair.values, df.psurf.values)
+        Qair[:,0,0,0] = qair_back.reshape(n_timesteps, ndim, ndim, ndim)
+    else:
+        Qair[:,0,0,0] = df.qair.values.reshape(n_timesteps, ndim, ndim, ndim)
     Wind[:,0,0,0] = df.wind.values.reshape(n_timesteps, ndim, ndim, ndim)
     PSurf[:,0,0] = df.psurf.values.reshape(n_timesteps, ndim, ndim)
     LWdown[:,0,0] = df.lwdown.values.reshape(n_timesteps, ndim, ndim)
 
-    #df.co2 *= 2.0
+    if co2_exp == "ele":
+        df.co2 *= 2.0
     CO2air[:,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
 
     f.close()
@@ -437,4 +431,15 @@ if __name__ == "__main__":
     #df['lwdown'].fillna(320., inplace=True)
     #df = df.fillna(df.mean())
 
-    main(lat, lon, df)
+
+    out_fname = "swiss_met.nc"
+    main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="amb")
+
+    out_fname = "swiss_met_eco2.nc"
+    main(lat, lon, df, out_fname, co2_exp="ele", vpd_exp="amb")
+
+    out_fname = "swiss_met_evpd.nc"
+    main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="ele")
+
+    out_fname = "swiss_met_eco2_evpd.nc"
+    main(lat, lon, df, out_fname, co2_exp="ele", vpd_exp="ele")
