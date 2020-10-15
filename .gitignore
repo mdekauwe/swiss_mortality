@@ -3,3 +3,9 @@ data/*
 *.nc
 *.csv
 .DS_Store
+experiment/namelists/*
+experiment/logs/*
+experiment/cable
+experiment/new_sumbal
+__pycache__
+experiment/__pycache__
