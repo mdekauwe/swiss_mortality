@@ -142,8 +142,11 @@ def main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="amb"):
     LWdown[:,0,0] = df.lwdown.values.reshape(n_timesteps, ndim, ndim)
 
     if co2_exp == "ele":
-        df.co2 *= 2.0
-    CO2air[:,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
+        deep = df.copy()
+        deep.co2 *= 2.0
+        CO2air[:,0,0] = deep.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
+    else:
+        CO2air[:,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
 
     f.close()
 
