@@ -192,6 +192,7 @@ def change_traits(met_fname, site, Kmax_value, b, c, vcmax25, new_zse):
     (nc_attrs, nc_dims, nc_vars) = ncdump(nc)
 
     soil = nc.createDimension('soil', 6)
+    mplant = nc.createDimension('mplant', 3)
     Kmax = nc.createVariable('Kmax', 'f8', ('y', 'x'))
     vcmax = nc.createVariable('vcmax', 'f8', ('y', 'x'))
     ejmax = nc.createVariable('ejmax', 'f8', ('y', 'x'))
@@ -199,14 +200,19 @@ def change_traits(met_fname, site, Kmax_value, b, c, vcmax25, new_zse):
     c_plant = nc.createVariable('c_plant', 'f8', ('y', 'x'))
     iveg = nc.createVariable('iveg', 'i4', ('y', 'x'))
     froot = nc.createVariable('froot', 'f8', ('soil','y', 'x'))
+    cplant = nc.createVariable('cplant', 'f8', ('mplant','y', 'x'))
     zse = nc.createVariable('zse', 'f8', ('soil'))
-    sand = nc.createVariable('sand', 'f4', ('y', 'x'))
-    clay = nc.createVariable('clay', 'f4', ('y', 'x'))
-    silt = nc.createVariable('silt', 'f4', ('y', 'x'))
+    #sand = nc.createVariable('sand', 'f4', ('y', 'x'))
+    #clay = nc.createVariable('clay', 'f4', ('y', 'x'))
+    #silt = nc.createVariable('silt', 'f4', ('y', 'x'))
     swilt = nc.createVariable('swilt', 'f8', ('y', 'x'))
     ssat = nc.createVariable('ssat', 'f8', ('y', 'x'))
     bch = nc.createVariable('bch', 'f8', ('y', 'x'))
-    #hyds = nc.createVariable('hyds', 'f8', ('y', 'x'))
+    shelrb = nc.createVariable('shelrb', 'f8', ('y', 'x'))
+    hyds = nc.createVariable('hyds', 'f8', ('y', 'x'))
+    clitt = nc.createVariable('clitt', 'f8', ('y', 'x'))
+
+    #canst1 = nc.createVariable('canst1', 'f8', ('y', 'x'))
 
     vcmax[:] = vcmax25 * 1e-6
     ejmax[:] = vcmax25 * 1.67 * 1e-6
@@ -215,24 +221,34 @@ def change_traits(met_fname, site, Kmax_value, b, c, vcmax25, new_zse):
     Kmax[:] = Kmax_value
     iveg[:,:] = 1 # ENF
 
+    clitt[:] = 300. # 20 is default, Esoil was very high, tuning it down to max ~1 mm day-1
     swilt[:] = 0.1097259066849827 # min of swc in obs
     ssat[:] = 0.393737028970276 # max of swc in obs
-    bch[:] = 11.4  #6.99888515  # using Fine clay from def_soil, best match for obs
-    #hyds[:] = 5.33910315E-06
-    #hyds[:] = 5.33910315E-06 * 5
+    bch[:] = 5.
+    shelrb[:] = 1.0
 
+    hyds[:] = 5.33910315E-06 / 10. # slow down drainage rate
+    #hyds[:] =2.e-6
+
+    #canst1[:] = 0.15
 
     #frac_root = np.array([0.021868,0.055387,0.116266,0.806479,0.0, 0.0])
-    frac_root = np.array([0.121128,0.253565,0.340501,0.284807, 0.0, 0.0])
+    #frac_root = np.array([0.121128,0.253565,0.340501,0.284807, 0.0, 0.0])
+
+    frac_root = np.array([0.021868,0.055387,0.116266,0.139521,0.490857,0.176101]) # rootbeta=0.99
+
     #new_zse = np.array([0.0022, 0.0058, 0.0134, 0.0189, 0.1325, 0.2872]) # zse / 10 = 0.46
     #new_zse = np.array([.05, .4, 0.85, 0.7, 0.8, 1.8]) # Experiment with one layer = 40 cm
     #new_zse = np.array([.022, .058, .134, .189, 1.325, 2.872]) # Experiment with top 4 layer = 40 cm
 
     froot[:,0,0] = frac_root.reshape(6, 1, 1)
     zse[:] = new_zse
-    clay[:] = 0.4 # calcareous soil over limestone with high clay content (up to 40%)
-    sand[:] = 0.3
-    silt[:] = 0.3
+
+
+    ## doesn't do anything
+    #clay[:] = 0.4 # calcareous soil over limestone with high clay content (up to 40%)
+    #sand[:] = 0.3
+    #silt[:] = 0.3
 
     nc.close()  # close the new file
 

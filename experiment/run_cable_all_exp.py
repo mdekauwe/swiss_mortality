@@ -106,6 +106,7 @@ class RunCable(object):
 
             (out_fname, out_log_fname) = self.clean_up_old_files(site)
 
+
             # ./plot_E_vs_psi_leaf.py, looks a reasonable match to obs
             # we don't hit the max, but the bulk of the values are in the right place
             Kmax_value = 0.4
@@ -131,7 +132,7 @@ class RunCable(object):
                             "filename%restart_out": "' '",
                             "filename%type": "'%s'" % (self.grid_fname),
                             "output%restart": ".FALSE.",
-                            #"fixedCO2": "%.2f" % (self.co2_conc),
+                            "fixedCO2": "%.2f" % (self.co2_conc),
                             "casafile%phen": "'%s'" % (self.phen_fname),
                             "casafile%cnpbiome": "'%s'" % (self.cnpbiome_fname),
                             "cable_user%GS_SWITCH": "'medlyn'",
@@ -226,107 +227,100 @@ if __name__ == "__main__":
     #'swiss_met_eco2_evpd.nc']#'swiss_met_eco2.nc']
     # ------------------------------------------- #
 
-    output_dir = "outputs"
-    met_subset = ['swiss_met.nc']
+
     #zse = np.array([.022, .058, .134, .189, 1.325, 2.872]) # Experiment with top 4 layer = 40 cm
-
-    #
-    ## Living experiment
-    #
-
     #zse = np.array([0.022, 0.058, 0.01925, 0.02921429, 0.0775, 0.20514286]) # Experiment with 6 layers = 0.4111
     zse = np.array([0.022, 0.058, 0.0193, 0.0292, 0.1775, 0.294]) # Experiment with 6 layers = 0.6
 
-    #"""
-    C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
-                 restart_dir=restart_dir, aux_dir=aux_dir,
-                 namelist_dir=namelist_dir, met_subset=met_subset,
-                 cable_src=cable_src, mpi=mpi, num_cores=num_cores,
-                 fwsoil="profitmax", zse=zse, fixed_lai=4.8)
-    C.main()
-
-    site = met_subset[0].split(".")[0].split("_")[0]
-    out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
-    shutil.move(out_fname, os.path.join(output_dir,
-                "CABLE_swiss_mortality_living.nc"))
-
-
-
-    #
-    ## CO2
-    #
-
-    met_subset = ['swiss_met_eco2.nc']
-    C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
-                 restart_dir=restart_dir, aux_dir=aux_dir,
-                 namelist_dir=namelist_dir, met_subset=met_subset,
-                 cable_src=cable_src, mpi=mpi, num_cores=num_cores,
-                 fwsoil="profitmax", zse=zse, fixed_lai=4.8)
-    C.main()
-
-    site = met_subset[0].split(".")[0].split("_")[0]
-    out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
-    shutil.move(out_fname, os.path.join(output_dir,
-                "CABLE_swiss_mortality_living_eco2.nc"))
-
-
-    #
-    ## eVPD
-    #
-
-    met_subset = ['swiss_met_evpd.nc']
-    C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
-                 restart_dir=restart_dir, aux_dir=aux_dir,
-                 namelist_dir=namelist_dir, met_subset=met_subset,
-                 cable_src=cable_src, mpi=mpi, num_cores=num_cores,
-                 fwsoil="profitmax", zse=zse, fixed_lai=4.8)
-    C.main()
-
-    site = met_subset[0].split(".")[0].split("_")[0]
-    out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
-    shutil.move(out_fname, os.path.join(output_dir,
-                "CABLE_swiss_mortality_living_evpd.nc"))
-
-
-    #
-    ## eco2 + eVPD
-    #
-
-    met_subset = ['swiss_met_eco2_evpd.nc']
-    C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
-                 restart_dir=restart_dir, aux_dir=aux_dir,
-                 namelist_dir=namelist_dir, met_subset=met_subset,
-                 cable_src=cable_src, mpi=mpi, num_cores=num_cores,
-                 fwsoil="profitmax", zse=zse, fixed_lai=4.8)
-    C.main()
-
-    site = met_subset[0].split(".")[0].split("_")[0]
-    out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
-    shutil.move(out_fname, os.path.join(output_dir,
-                "CABLE_swiss_mortality_living_eco2_evpd.nc"))
-
-    #"""
-
-    """
+    output_dir = "outputs"
     met_subset = ['swiss_met.nc']
-    #
-    ## Dying experiment
-    #
-    dx = 12. # dies with hyds=5.33910315E-06
 
-    zse = np.array([0.022, 0.058, 0.0193, 0.0292, 0.1775, 0.294]) # Experiment with 6 layers = 0.6
-    actual_depth = zse / dx
-    print(np.sum(zse), np.sum(actual_depth))
+    for dx in [0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]:
 
-    C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
-                 restart_dir=restart_dir, aux_dir=aux_dir,
-                 namelist_dir=namelist_dir, met_subset=met_subset,
-                 cable_src=cable_src, mpi=mpi, num_cores=num_cores,
-                 fwsoil="profitmax", zse=actual_depth, fixed_lai=4.8)
-    C.main()
+        change = np.ones(6) * dx
+        #change[4] = 1.0 # don't change two bottom layers with no roots
+        #change[5] = 1.0 # don't change two bottom layers with no roots
+        new_zse = zse / change
 
-    site = met_subset[0].split(".")[0].split("_")[0]
-    out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
-    shutil.move(out_fname, os.path.join(output_dir,
-                "CABLE_swiss_mortality_dying.nc"))
-    """
+        C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
+                     restart_dir=restart_dir, aux_dir=aux_dir,
+                     namelist_dir=namelist_dir, met_subset=met_subset,
+                     cable_src=cable_src, mpi=mpi, num_cores=num_cores,
+                     fwsoil="profitmax", fixed_lai=2.5, zse=new_zse)
+        C.main()
+
+
+        site = met_subset[0].split(".")[0].split("_")[0]
+        out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
+        shutil.move(out_fname, os.path.join(output_dir,
+                    "hydraulics_root_%.1f.nc" % (dx)))
+
+
+    output_dir = "outputs_eco2"
+    met_subset = ['swiss_met_eco2.nc']
+
+    for dx in [0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]:
+
+        change = np.ones(6) * dx
+        #change[4] = 1.0 # don't change two bottom layers with no roots
+        #change[5] = 1.0 # don't change two bottom layers with no roots
+        new_zse = zse / change
+
+        C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
+                     restart_dir=restart_dir, aux_dir=aux_dir,
+                     namelist_dir=namelist_dir, met_subset=met_subset,
+                     cable_src=cable_src, mpi=mpi, num_cores=num_cores,
+                     fwsoil="profitmax", fixed_lai=2.5, zse=new_zse)
+        C.main()
+
+        site = met_subset[0].split(".")[0].split("_")[0]
+        out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
+        shutil.move(out_fname, os.path.join(output_dir,
+                    "hydraulics_root_%.1f.nc" % (dx)))
+
+
+    output_dir = "outputs_evpd"
+    met_subset = ['swiss_met_evpd.nc']
+
+    for dx in [0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]:
+
+        change = np.ones(6) * dx
+        #change[4] = 1.0 # don't change two bottom layers with no roots
+        #change[5] = 1.0 # don't change two bottom layers with no roots
+        new_zse = zse / change
+
+        C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
+                     restart_dir=restart_dir, aux_dir=aux_dir,
+                     namelist_dir=namelist_dir, met_subset=met_subset,
+                     cable_src=cable_src, mpi=mpi, num_cores=num_cores,
+                     fwsoil="profitmax", fixed_lai=2.5, zse=new_zse)
+        C.main()
+
+        site = met_subset[0].split(".")[0].split("_")[0]
+        out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
+        shutil.move(out_fname, os.path.join(output_dir,
+                    "hydraulics_root_%.1f.nc" % (dx)))
+
+
+    output_dir = "outputs_eco2_evpd"
+    met_subset = ['swiss_met_eco2_evpd.nc']
+
+
+    for dx in [0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]:
+
+        change = np.ones(6) * dx
+        #change[4] = 1.0 # don't change two bottom layers with no roots
+        #change[5] = 1.0 # don't change two bottom layers with no roots
+        new_zse = zse / change
+
+        C = RunCable(met_dir=met_dir, log_dir=log_dir, output_dir=output_dir,
+                     restart_dir=restart_dir, aux_dir=aux_dir,
+                     namelist_dir=namelist_dir, met_subset=met_subset,
+                     cable_src=cable_src, mpi=mpi, num_cores=num_cores,
+                     fwsoil="profitmax", fixed_lai=2.5, zse=new_zse)
+        C.main()
+
+        site = met_subset[0].split(".")[0].split("_")[0]
+        out_fname = os.path.join(output_dir, "%s_out.nc" % (site))
+        shutil.move(out_fname, os.path.join(output_dir,
+                    "hydraulics_root_%.1f.nc" % (dx)))

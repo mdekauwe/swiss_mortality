@@ -21,13 +21,12 @@ import os
 import glob
 from optparse import OptionParser
 
-def main(fname1, plot_fname=None, fpath=None):
+def main(fname1, fname2, plot_fname=None, fpath=None):
 
     df1 = read_cable_file(fname1, type="CABLE")
-    #plt.plot(df1.plc)
-    #plt.show()
-    #sys.exit()
     df1 = resample_timestep(df1, type="CABLE")
+    df2 = read_cable_file(fname2, type="CABLE")
+    df2 = resample_timestep(df2, type="CABLE")
     #df1 = df1[(df1.index.hour >= 12) & (df1.index.hour < 13) &
     #           (df1.index.minute < 30)].copy()
 
@@ -57,8 +56,10 @@ def main(fname1, plot_fname=None, fpath=None):
         #a.plot(df1[v].index.to_pydatetime(), df1[v].rolling(window=7).mean(), c=colours[2],
         #       lw=1.5, ls="-", label="Hydraulics")
 
-        a.plot(df1[v].index.to_pydatetime(), df1[v], c=colours[2],
-               lw=1.5, ls="-")
+        a.plot(df1[v].index.dayofyear, df1[v], c=colours[1],
+               lw=1.5, ls="-", label="aco2")
+        a.plot(df2[v].index.dayofyear, df2[v], c=colours[2],
+               lw=1.5, ls="-", label="eco2")
 
         #x.bar(df_met.index, df_met["Rainf"], alpha=0.3, color="black")
     #ax1.set_ylim(0, 0.2)
@@ -72,7 +73,7 @@ def main(fname1, plot_fname=None, fpath=None):
 
 
     #plt.setp(ax1.get_xticklabels(), visible=False)
-    #ax1.legend(numpoints=1, loc="best")
+    ax1.legend(numpoints=1, loc="best")
 
 
     #for a in axes:
@@ -82,15 +83,7 @@ def main(fname1, plot_fname=None, fpath=None):
         #a.set_xlim([datetime.date(2012,7,1), datetime.date(2013, 8, 1)])
         #a.set_xlim([datetime.date(2006,11,1), datetime.date(2007, 4, 1)])
 
-    if fpath is None:
-        fpath = "./"
-    ofname = os.path.join(fpath, plot_fname)
-
-    if plot_fname is None:
-        plt.show()
-    else:
-        #fig.autofmt_xdate()
-        fig.savefig(plot_fname, bbox_inches='tight', pad_inches=0.1)
+    plt.show()
 
 
 def read_cable_file(fname, type=None):
@@ -152,5 +145,6 @@ if __name__ == "__main__":
 
     fpath = "/Users/mdekauwe/Desktop"
     plot_fname = "plc.png"
-    fname = "outputs/hydraulics_root_1.0.nc"
-    main(fname, plot_fname, fpath)
+    fname1 = "outputs/hydraulics_root_0.8.nc"
+    fname2 = "outputs_eco2/hydraulics_root_0.8.nc"
+    main(fname1, fname2, plot_fname, fpath)

@@ -26,8 +26,8 @@ def main(df_swc, df_psix, fname, plot_fname=None, fpath=None):
     df = read_cable_file(fname)
     dfd = df.resample("D").agg("sum")
     dfa = df.resample("A").agg("sum")
-    print(dfa.TVeg.values[0], (dfa.ECanop/dfa.Evap).values[0]*100.)
-    print(np.max(dfd["TVeg"]))
+    #print(dfa.TVeg.values[0], (dfa.ECanop/dfa.Evap).values[0]*100.)
+    print(np.max(dfd["TVeg"]), np.max(dfd["ESoil"]))
     fig = plt.figure(figsize=(9,6))
     fig.subplots_adjust(hspace=0.1)
     fig.subplots_adjust(wspace=0.2)
@@ -58,11 +58,11 @@ def main(df_swc, df_psix, fname, plot_fname=None, fpath=None):
     axes = [ax1, ax2, ax3]
     axes2 = [axx1, axx2, axx3]
     ax1.plot(df.index, df["theta1"].rolling(window=window).mean(), c=colours[1],
-             lw=1.5, ls="-", label="1-4", zorder=1)
+             lw=1.5, ls="-", label="1-2", zorder=1)
     ax1.plot(df.index, df["theta2"].rolling(window=window).mean(), c=colours[2],
-             lw=1.5, ls="-", label="5-6")
-    #ax1.plot(df.index, df["theta3"].rolling(window=window).mean(), c=colours[0],
-    #         lw=1.5, ls="-", label="5+6")
+             lw=1.5, ls="-", label="3-4")
+    ax1.plot(df.index, df["theta3"].rolling(window=window).mean(), c=colours[0],
+             lw=1.5, ls="-", label="5+6")
     #ax1.plot(df.index, df["theta_weight"].rolling(window=window).mean(), c=colours[5],
     #         lw=1.5, ls="-", label="weighted")
 
@@ -90,15 +90,14 @@ def main(df_swc, df_psix, fname, plot_fname=None, fpath=None):
 
     df_psi_survive = df_psix[df_psix["mortality observation"] == "surviving"]
     df_psi_dying = df_psix[df_psix["mortality observation"] == "dying "] # NB white space in file
-    print(len(df_psi_survive))
-    print(len(df_psi_dying))
-    ax2.plot(df_psi_survive.index, df_psi_survive["psi_x"], c="black", ls=" ",
-             marker=".", label="Surviving", alpha=0.5)
+
+    ax2.plot(df_psi_survive.index, df_psi_survive["psi_x"], c="red", ls=" ",
+             marker=".", label="Obs. $\Psi$$_{x}$", alpha=0.5)
     #ax2.plot(df_psi_dying.index, df_psi_dying["psi_x"], c="red", ls=" ",
     #         marker=".", label="Dying", alpha=0.5)
 
     ax3.plot(dfd.index, dfd["TVeg"].rolling(window=window).mean(), c=colours[0], lw=1.5, ls="-", label="Etr")
-    #ax3.plot(dfd.index, dfd["ESoil"].rolling(window=window).mean(), c=colours[1], lw=1.5, ls="-", label="Esoil")
+    ax3.plot(dfd.index, dfd["ESoil"].rolling(window=window).mean(), c=colours[1], lw=1.5, ls="-", label="Esoil")
     #ax3.plot(dfd.index, dfd["TVeg"].cumsum(), c=colours[0], lw=1.5, ls="-")
 
     #dfx = read_cable_file("outputs/hydraulics_root_2.0.nc")
@@ -191,28 +190,27 @@ def read_cable_file(fname):
     #zse /= change
     #print(zse, np.sum(zse[0:4]))
 
-    # two layers
-    frac1 = zse[0] / np.sum(zse[0:4])
-    frac2 = zse[1] / np.sum(zse[0:4])
-    frac3 = zse[2] / np.sum(zse[0:4])
-    frac4 = zse[3] / np.sum(zse[0:4])
+    # three layers
+    frac1 = zse[0] / np.sum(zse[0:2])
+    frac2 = zse[1] / np.sum(zse[0:2])
+    frac3 = zse[2] / np.sum(zse[2:4])
+    frac4 = zse[3] / np.sum(zse[2:4])
     frac5 = zse[4] / np.sum(zse[4:])
     frac6 = zse[5] / np.sum(zse[4:])
 
+    ds['theta1'] = (ds['SoilMoist'][:,0] * frac1) + \
+                   (ds['SoilMoist'][:,1] * frac2)
+    ds['theta2'] = (ds['SoilMoist'][:,2] * frac3) + \
+                   (ds['SoilMoist'][:,3] * frac4)
+    ds['theta3'] = (ds['SoilMoist'][:,4] * frac5) + \
+                   (ds['SoilMoist'][:,5] * frac6)
 
     #ds['theta1'] = (ds['SoilMoist'][:,0] * frac1) + \
-    #               (ds['SoilMoist'][:,1] * frac2)
-    #ds['theta2'] = (ds['SoilMoist'][:,2] * frac3) + \
+    #               (ds['SoilMoist'][:,1] * frac2) + \
+    #               (ds['SoilMoist'][:,2] * frac3) + \
     #               (ds['SoilMoist'][:,3] * frac4)
-    #ds['theta3'] = (ds['SoilMoist'][:,4] * frac5) + \
+    #ds['theta2'] = (ds['SoilMoist'][:,4] * frac5) + \
     #               (ds['SoilMoist'][:,5] * frac6)
-
-    ds['theta1'] = (ds['SoilMoist'][:,0] * frac1) + \
-                   (ds['SoilMoist'][:,1] * frac2) + \
-                   (ds['SoilMoist'][:,2] * frac3) + \
-                   (ds['SoilMoist'][:,3] * frac4)
-    ds['theta2'] = (ds['SoilMoist'][:,4] * frac5) + \
-                   (ds['SoilMoist'][:,5] * frac6)
 
 
     """
@@ -271,8 +269,8 @@ if __name__ == "__main__":
 
     #print(df_obs.swc.max(), df_obs.swc.min())
     #sys.exit()
-    fname = "outputs/hydraulics_root_1.0.nc"
+    fname = "outputs/CABLE_swiss_mortality_living.nc"
     fpath = "/Users/mdekauwe/Desktop"
 
-    plot_fname = "water_potentials.png"
+    plot_fname = "water_potentials_surviving.png"
     main(df_swc, df_psix, fname, plot_fname, fpath)

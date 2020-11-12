@@ -35,10 +35,12 @@ def main(plot_fname=None, fpath=None):
     plt.rcParams['ytick.labelsize'] = 12
     colours = plt.cm.YlOrRd_r(np.linspace(0, 1, 11))
 
+
     ax1 = fig.add_subplot(1,2,1)
     ax2 = fig.add_subplot(1,2,2)
 
-    zse = np.array([.022, .058, .134, .189])
+
+    zse = np.array([0.022, 0.058, 0.0193, 0.0292, 0.1775, 0.294])
     depth = np.sum(zse)
     print(depth)
     cnt = 0
@@ -52,26 +54,28 @@ def main(plot_fname=None, fpath=None):
     depth_evpd = []
     depth_eco2_evpd = []
     for dx in [0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0]:
+    #for dx in [0.8]:
 
-        print(dx)
+        #print(dx)
         fname = "outputs/hydraulics_root_%.1f.nc" % (dx)
         df = read_cable_file(fname)
-        dfd = df.resample("D").agg("sum")
-        dfm = df.resample("D").agg("max")
+        #dfd = df.resample("D").agg("sum")
+        dfa = df.resample("D").agg("max")
 
         fname = "outputs_eco2/hydraulics_root_%.1f.nc" % (dx)
-        dfx = read_cable_file(fname)
-        dfm_eco2 = dfx.resample("D").agg("max")
+        dfc = read_cable_file(fname)
+        dfc = dfc.resample("D").agg("max")
 
         fname = "outputs_evpd/hydraulics_root_%.1f.nc" % (dx)
-        dfx = read_cable_file(fname)
-        dfm_evpd = dfx.resample("D").agg("max")
+        dfv = read_cable_file(fname)
+        dfv = dfv.resample("D").agg("max")
 
         fname = "outputs_eco2_evpd/hydraulics_root_%.1f.nc" % (dx)
-        dfx = read_cable_file(fname)
-        dfm_eco2_evpd = dfx.resample("D").agg("max")
+        dfcv = read_cable_file(fname)
+        dfcv = dfcv.resample("D").agg("max")
 
         actual_depth = depth / dx
+
 
         df1 = df[(df.index.hour >= 5) & (df.index.hour < 6) &
                  (df.index.minute >= 30)].copy()
@@ -86,24 +90,26 @@ def main(plot_fname=None, fpath=None):
                  lw=1.5, ls=" ", marker=".", label="%.2f m" % (actual_depth))
 
 
-        dfm = dfm[dfm.plc == 88]
-        if len(dfm) > 0.0:
-            when_amb.append(dfm.plc.index[0].dayofyear)
+        dfa = dfa[dfa.plc == 88]
+        if len(dfa) > 0.0:
+            print("amb", dx, actual_depth, dfa.plc.index[0].dayofyear)
+            when_amb.append(dfa.plc.index[0].dayofyear)
             depth_amb.append(actual_depth)
 
-        dfm_eco2 = dfm_eco2[dfm_eco2.plc == 88]
-        if len(dfm_eco2) > 0.0:
-            when_eco2.append(dfm_eco2.plc.index[0].dayofyear)
+        dfc = dfc[dfc.plc == 88]
+        if len(dfc) > 0.0:
+            print("co2", dx, actual_depth, dfc.plc.index[0].dayofyear)
+            when_eco2.append(dfc.plc.index[0].dayofyear)
             depth_eco2.append(actual_depth)
 
-        dfm_evpd = dfm_evpd[dfm_evpd.plc == 88]
-        if len(dfm_evpd) > 0.0:
-            when_evpd.append(dfm_evpd.plc.index[0].dayofyear)
+        dfv = dfv[dfv.plc == 88]
+        if len(dfv) > 0.0:
+            when_evpd.append(dfv.plc.index[0].dayofyear)
             depth_evpd.append(actual_depth)
 
-        dfm_eco2_evpd = dfm_eco2_evpd[dfm_eco2_evpd.plc == 88]
-        if len(dfm_eco2_evpd) > 0.0:
-            when_eco2_evpd.append(dfm_eco2_evpd.plc.index[0].dayofyear)
+        dfcv = dfcv[dfcv.plc == 88]
+        if len(dfcv) > 0.0:
+            when_eco2_evpd.append(dfcv.plc.index[0].dayofyear)
             depth_eco2_evpd.append(actual_depth)
 
         #ax1.set_ylabel("$\Theta$ (m$^{3}$ m$^{-3}$)")
@@ -136,10 +142,10 @@ def main(plot_fname=None, fpath=None):
 
     ax1.set_xlim(-5, 0)
 
-    ax2.plot(depth_amb, when_amb, "ks", label="Amb")
-    ax2.plot(depth_eco2, when_eco2, "go", label="eCO$_2$ (x2)")
-    ax2.plot(depth_evpd, when_evpd, "ro", label="eVPD (x1.5)")
-    ax2.plot(depth_eco2_evpd, when_eco2_evpd, "bo", label="eCO$_2$ + eVPD")
+    ax2.plot(depth_amb, when_amb, "ks", label="Amb", markersize=9)
+    ax2.plot(depth_eco2, when_eco2, "go", label="eCO$_2$ (x2)", alpha=0.5)
+    ax2.plot(depth_evpd, when_evpd, "ro", label="eVPD (x1.5)", alpha=0.5)
+    ax2.plot(depth_eco2_evpd, when_eco2_evpd, "bo", label="eCO$_2$ + eVPD", alpha=0.5)
 
     ax2.legend(numpoints=1, loc="best", fontsize=8, frameon=False)
 

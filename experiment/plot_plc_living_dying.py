@@ -21,13 +21,14 @@ import os
 import glob
 from optparse import OptionParser
 
-def main(fname1, plot_fname=None, fpath=None):
+def main(living_fname, dying_fname, plot_fname=None, fpath=None):
 
-    df1 = read_cable_file(fname1, type="CABLE")
-    #plt.plot(df1.plc)
-    #plt.show()
-    #sys.exit()
+    df1 = read_cable_file(living_fname, type="CABLE")
     df1 = resample_timestep(df1, type="CABLE")
+
+    df2 = read_cable_file(dying_fname, type="CABLE")
+    df2 = resample_timestep(df2, type="CABLE")
+    print(df2.plc.max())
     #df1 = df1[(df1.index.hour >= 12) & (df1.index.hour < 13) &
     #           (df1.index.minute < 30)].copy()
 
@@ -58,7 +59,9 @@ def main(fname1, plot_fname=None, fpath=None):
         #       lw=1.5, ls="-", label="Hydraulics")
 
         a.plot(df1[v].index.to_pydatetime(), df1[v], c=colours[2],
-               lw=1.5, ls="-")
+               lw=3.0, ls="-", label="Surviving")
+        a.plot(df2[v].index.to_pydatetime(), df2[v], c=colours[3],
+               lw=1.5, ls="-", label="Dying")
 
         #x.bar(df_met.index, df_met["Rainf"], alpha=0.3, color="black")
     #ax1.set_ylim(0, 0.2)
@@ -72,7 +75,7 @@ def main(fname1, plot_fname=None, fpath=None):
 
 
     #plt.setp(ax1.get_xticklabels(), visible=False)
-    #ax1.legend(numpoints=1, loc="best")
+    ax1.legend(numpoints=1, loc="best")
 
 
     #for a in axes:
@@ -84,13 +87,9 @@ def main(fname1, plot_fname=None, fpath=None):
 
     if fpath is None:
         fpath = "./"
-    ofname = os.path.join(fpath, plot_fname)
 
-    if plot_fname is None:
-        plt.show()
-    else:
-        #fig.autofmt_xdate()
-        fig.savefig(plot_fname, bbox_inches='tight', pad_inches=0.1)
+    ofname = os.path.join(fpath, plot_fname)
+    fig.savefig(ofname, bbox_inches='tight', pad_inches=0.1)
 
 
 def read_cable_file(fname, type=None):
@@ -151,6 +150,7 @@ def resample_timestep(df, type=None):
 if __name__ == "__main__":
 
     fpath = "/Users/mdekauwe/Desktop"
-    plot_fname = "plc.png"
-    fname = "outputs/hydraulics_root_1.0.nc"
-    main(fname, plot_fname, fpath)
+    plot_fname = "plc_living_dying.png"
+    living_fname = "outputs/CABLE_swiss_mortality_living.nc"
+    dying_fname = "outputs/CABLE_swiss_mortality_dying.nc"
+    main(living_fname, dying_fname, plot_fname, fpath)

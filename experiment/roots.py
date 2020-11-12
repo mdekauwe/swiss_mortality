@@ -1,7 +1,7 @@
 
 import numpy as np
 
-root_beta = 0.943
+root_beta = 0.93#0.943 # 0.99
 
 zse = np.array([.022, .058, .134, .189, 1.325, 2.872])
 froot = np.zeros(6)
@@ -23,9 +23,9 @@ for i in range(6):
 
 # empty two bottom layers
 
-froot[3] += froot[4] + froot[5]
-froot[4] = 0.0
-froot[5] = 0.0
+#froot[3] += froot[4] + froot[5]
+#froot[4] = 0.0
+#froot[5] = 0.0
 
 print("%.6f,%.6f,%.6f,%.6f,%.6f,%.6f" % (froot[0], froot[1], froot[2], froot[3], froot[4], froot[5]))
 print(np.sum(froot))
