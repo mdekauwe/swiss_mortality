@@ -127,26 +127,34 @@ def main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="amb"):
     longitude[:] = lon
 
     SWdown[:,0,0] = df.swdown.values.reshape(n_timesteps, ndim, ndim)
-    Tair[:,0,0,0] = df.tair.values.reshape(n_timesteps, ndim, ndim, ndim)
+
+
     Rainf[:,0,0] = df.rainf.values.reshape(n_timesteps, ndim, ndim)
 
     if vpd_exp == "ele":
-        vpd = qair_to_vpd(df.qair.values, df.tair.values, df.psurf.values)
-        vpd = vpd * 1.5
-        qair_back = vpd_to_qair(vpd, df.tair.values, df.psurf.values)
-        Qair[:,0,0,0] = qair_back.reshape(n_timesteps, ndim, ndim, ndim)
+        Qair[:,0,0,0] = df.qair_future.values.reshape(n_timesteps, ndim, ndim, ndim)
     else:
         Qair[:,0,0,0] = df.qair.values.reshape(n_timesteps, ndim, ndim, ndim)
+
+    if vpd_exp == "ele" and co2_exp == "amb":
+        Tair[:,0,0,0] = df.air_temp_C_2100.values.reshape(n_timesteps, ndim,
+                                                          ndim, ndim)
+    elif vpd_exp == "ele" and co2_exp == "ele":
+        Tair[:,0,0,0] = df.air_temp_C_2100.values.reshape(n_timesteps, ndim,
+                                                          ndim, ndim)
+    else:
+        Tair[:,0,0,0] = df.tair.values.reshape(n_timesteps, ndim, ndim, ndim)
+
     Wind[:,0,0,0] = df.wind.values.reshape(n_timesteps, ndim, ndim, ndim)
     PSurf[:,0,0] = df.psurf.values.reshape(n_timesteps, ndim, ndim)
     LWdown[:,0,0] = df.lwdown.values.reshape(n_timesteps, ndim, ndim)
 
     if co2_exp == "ele":
-        deep = df.copy()
-        deep.co2 *= 2.0
-        CO2air[:,0,0] = deep.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
+        CO2air[:,0,0,0] = df.CO2_mean_ppm_2100.values.reshape(n_timesteps, ndim,
+                                                              ndim, ndim)
     else:
-        CO2air[:,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
+        CO2air[:,0,0,0] = df.co2.values.reshape(n_timesteps, ndim, ndim, ndim)
+
 
     f.close()
 
@@ -316,18 +324,20 @@ if __name__ == "__main__":
 
 
 
-    fname = "../data/MeteoSwiss station Ruenenberg 2016_20.xlsx"
-    df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data Ruenenberg')
+    fname = "../data/Met_data_2100.csv"
+    df = pd.read_csv(fname)
 
-    df = df.rename(columns={'time':'dates',
-                            'air temp (°C)':'tair',
-                            'air humidity (%)':'rh',
-                            'global radiation (W/m2)':'swdown',
-                            'wind speed (m/s)':'wind',
-                            'precip (mm)':'rainf',
-                            'vapor presure (hPa)':'vpd'})
+    df = df.rename(columns={'datetime_utc':'dates',
+                            'air_temp_C':'tair',
+                            'air_humidity_%':'rh',
+                            'global_radiation_W_m-2':'swdown',
+                            'wind_speed_m_s-1':'wind',
+                            'precip_mm':'rainf',
+                            'VPD_kPa':'vpd',
+                            'CO2_mean_ppm_2018':'co2'})
 
-    df = df.drop(['stn', 'sunshine duration (min)'], axis=1)
+    df = df.drop(['saturated_vapor_pressure_Pa', 'sunshine_duration_min',
+                  'vapor_pressure_hPa'], axis=1)
 
     # Clean up the dates
     df['dates'] = df['dates'].astype(str)
@@ -342,62 +352,27 @@ if __name__ == "__main__":
         if hour.startswith("0"):
             hour = hour[1:]
         date = "%s/%s/%s %s:00" % (year, month, day, hour)
+
         new_dates.append(date)
 
     df['dates'] = new_dates
     df = df.set_index('dates')
     df.index = pd.to_datetime(df.index)
 
-    df = df[df.index.year == 2018]
-
-    """
-
-
-    fname = "../data/swiss site meto data 2017_18.xlsx"
-    df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data 2018',
-                       na_values="na")
-    #df = pd.read_excel(open(fname, 'rb'), sheet_name='meteo data 2017',
-    #                   na_values="na")
-
-
-    # Clean up the column names
-    df = df.rename(columns={'date / time utc':'dates',
-                                    'air temp (°C)':'tair',
-                                    'air humidity (%)':'rh',
-                                    'global rad (W/m2)':'swdown',
-                                    'wind (m/s)':'wind',
-                                    'precip (mm)':'rainf',
-                                    'vpd (hPa)':'vpd'})
-
-    # Clean up the dates
-    df['dates'] = df['dates'].astype(str).str[:-4]
-    date = pd.to_datetime(df['dates'], format='%Y-%m-%d %H:%M:%S')
-    df = df.set_index('dates')
-
-    """
 
     # fix units
-    hpa_2_kpa = 0.1
+    #hpa_2_kpa = 0.1
     kpa_2_pa = 1000.
     deg_2_kelvin = 273.15
-    df.vpd *= hpa_2_kpa
+    #df.vpd *= hpa_2_kpa
     df.tair += deg_2_kelvin
+    df.air_temp_C_2100 += deg_2_kelvin
     df.rainf /= 3600. # kg m-2 s-1
 
-    # sort out negative values
+    # sort out bad values
     df.swdown = np.where(df.swdown < 0.0, 0.0, df.swdown)
-    df.vpd = np.where(df.vpd < 0.0, 0.0, df.vpd)
-    df.rh = np.where(df.rh < 0.0, 0.0, df.rh)
-    df.rh = np.where(df.rh > 100.0, 100.0, df.rh)
-    df.rh /= 100.
-
-
-
-    # Add co2
-    df_co2 = pd.read_csv("AmaFACE_co2npdepforcing_1850_2100_AMB.csv", sep=";")
-    df_co2.rename(columns={'CO2 [ppm]':'co2'}, inplace=True)
-    co2 = df_co2[df_co2.Year == 2018].co2.values[0]
-    df['co2'] = co2
+    df.vpd = np.where(df.vpd <= 0.05, 0.05, df.vpd)
+    df.VPD_kPa_2100 = np.where(df.VPD_kPa_2100 <= 0.05, 0.05, df.VPD_kPa_2100)
 
     # Add pressure
     df['psurf'] = 101.325 * kpa_2_pa
@@ -406,35 +381,14 @@ if __name__ == "__main__":
     df['lwdown'] = estimate_lwdown(df.tair.values, df.rh.values)
 
     # Add qair
-    df['qair'] = convert_rh_to_qair(df.rh.values, df.tair.values,
+    df['qair'] = vpd_to_qair(df.vpd.values, df.tair.values, df.psurf.values)
+    df['qair_future'] = vpd_to_qair(df.VPD_kPa_2100.values, df.tair.values,
                                     df.psurf.values)
 
-    # drop the single 2019 entry
-    df.drop(df.tail(1).index, inplace=True)
-
-    """
-    #df = df.fillna(method='ffill')
-    df['tair'].interpolate(method ='linear', limit_direction ='forward',
-                          inplace=True)
-    df['lwdown'].interpolate(method ='linear', limit_direction ='forward',
-                            inplace=True)
-    df['qair'].interpolate(method ='linear', limit_direction ='forward',
-                            inplace=True)
-    df['rainf'].fillna(0.0, inplace=True)
-    df = df.fillna(df.mean()) # wind
-    """
-
-
-
-    ### this will look OK on the daily, but won't have a diurnal cycle,
-    ### so need to use a diurnal fill
-    #df['rainf'].fillna(0.0, inplace=True)
-    #df['tair'].fillna(16.0+deg_2_kelvin, inplace=True)
-    #df['swdown'].fillna(90., inplace=True)
-    #df['lwdown'].fillna(320., inplace=True)
-    #df = df.fillna(df.mean())
-
-
+    #plt.plot(df.qair, color="b")
+    ##plt.plot(df.qair_future, color="r")
+    #plt.show()
+    #sys.exit()
     out_fname = "swiss_met.nc"
     main(lat, lon, df, out_fname, co2_exp="amb", vpd_exp="amb")
 
