@@ -324,20 +324,20 @@ if __name__ == "__main__":
 
 
 
-    fname = "../data/Met_data_2100.csv"
+    fname = "../data/MeteoSwiss_ALL.csv"
     df = pd.read_csv(fname)
 
-    df = df.rename(columns={'datetime_utc':'dates',
+    df = df.rename(columns={'time':'dates',
                             'air_temp_C':'tair',
                             'air_humidity_%':'rh',
-                            'global_radiation_W_m-2':'swdown',
-                            'wind_speed_m_s-1':'wind',
+                            'global_radiation_W/m2':'swdown',
+                            'wind_speed_m/s':'wind',
                             'precip_mm':'rainf',
                             'VPD_kPa':'vpd',
                             'CO2_mean_ppm_2018':'co2'})
 
-    df = df.drop(['saturated_vapor_pressure_Pa', 'sunshine_duration_min',
-                  'vapor_pressure_hPa'], axis=1)
+    df = df.drop(['sunshine_duration_min',
+                  'vapor_presure_hPa'], axis=1)
 
     # Clean up the dates
     df['dates'] = df['dates'].astype(str)
@@ -378,7 +378,7 @@ if __name__ == "__main__":
     df['psurf'] = 101.325 * kpa_2_pa
 
     # Add LW
-    df['lwdown'] = estimate_lwdown(df.tair.values, df.rh.values)
+    df['lwdown'] = estimate_lwdown(df.tair.values, df.rh.values/100.)
 
     # Add qair
     df['qair'] = vpd_to_qair(df.vpd.values, df.tair.values, df.psurf.values)
